@@ -33,11 +33,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   //FIXME: Add your Mapbox access token here
-  static const String ACCESS_TOKEN = "pk.eyJ1IjoibXJrYW1sZXNoIiwiYSI6ImNrZjZka2p3NzBkN2EycnFnaDhib3lramkifQ.1s4mNcbxVR75Ts_xXMOuEA";
+  static const String ACCESS_TOKEN =
+      "pk.eyJ1IjoibXJrYW1sZXNoIiwiYSI6ImNrZjZka2p3NzBkN2EycnFnaDhib3lramkifQ.1s4mNcbxVR75Ts_xXMOuEA";
   final Location location = Location();
-
-
-
 
   Future<void> _showInfoDialog() {
     return showDialog<void>(
@@ -75,31 +73,83 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  MapboxMapController mapController;
+  MapboxMapController controller;
+  Symbol _selectedSymbol;
 
   void _onMapCreated(MapboxMapController controller) {
-    mapController = controller;
+    this.controller = controller;
+    controller.onSymbolTapped.add(_onSymbolTapped);
+    this.controller.addSymbol(
+          SymbolOptions(
+              geometry: LatLng(26.8361416, 85.1600435),
+              iconImage: "airport-15"),
+        );
   }
+
+  void _onSymbolTapped(Symbol symbol) {
+    if (_selectedSymbol != null) {
+      _updateSelectedSymbol(
+        const SymbolOptions(iconSize: 1.0),
+      );
+    }
+    setState(() {
+      _selectedSymbol = symbol;
+    });
+    _updateSelectedSymbol(
+      SymbolOptions(
+        iconSize: 1.4,
+      ),
+    );
+  }
+
+  void _updateSelectedSymbol(SymbolOptions changes) {
+    controller.updateSymbol(_selectedSymbol, changes);
+  }
+
+  static final CameraPosition _kInitialPosition = const CameraPosition(
+    target: LatLng(26.8361416, 85.1600435),
+    zoom: 11.0,
+  );
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.info_outline),
-            onPressed: _showInfoDialog,
-          )
-        ],
-      ),
-      body: MapboxMap(
-        accessToken: ACCESS_TOKEN,
-        onMapCreated: _onMapCreated,
-        initialCameraPosition:
-        const CameraPosition(target: LatLng(25.0960742, 85.3131194)),
-      )// This trailing comma makes auto-formatting nicer for build methods.
-    );
+        appBar: AppBar(
+          title: Text(widget.title),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.info_outline),
+              onPressed: _showInfoDialog,
+            )
+          ],
+        ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Center(
+              child: SizedBox(
+                width: double.infinity,
+                height: 300.0,
+                child: MapboxMap(
+                  accessToken: ACCESS_TOKEN,
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: _kInitialPosition,
+                  trackCameraPosition: true,
+                  myLocationEnabled: true,
+                  myLocationRenderMode: MyLocationRenderMode.GPS,
+                  onMapClick: (point, latLng) async {
+                    print(
+                        "Map click: ${point.x},${point.y}   ${latLng.latitude}/${latLng.longitude}");
+                  },
+                  onMapLongClick: (point, latLng) async {
+                    print(
+                        "Map long press: ${point.x},${point.y}   ${latLng.latitude}/${latLng.longitude}");
+                  },
+                ),
+              ),
+            ),
+          ],
+        ));
   }
 }
